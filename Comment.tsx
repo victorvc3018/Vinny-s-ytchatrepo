@@ -2,25 +2,60 @@
 import React from 'react';
 import { Message, User } from './types';
 
+// A simple component to find and convert URLs in text to clickable links.
+const Linkify: React.FC<{ text: string }> = ({ text }) => {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = text.split(urlRegex);
+
+  return (
+    <>
+      {parts.map((part, i) =>
+        urlRegex.test(part) ? (
+          <a
+            key={i}
+            href={part}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sky-400 hover:underline break-all"
+            onClick={(e) => e.stopPropagation()} // Prevent triggering parent onClick events
+          >
+            {part}
+          </a>
+        ) : (
+          <React.Fragment key={i}>{part}</React.Fragment>
+        )
+      )}
+    </>
+  );
+};
+
 interface CommentProps {
   message: Message;
   currentUser: User;
   onReply: (message: Message) => void;
   onToggleReaction: (messageId: string, emoji: string) => void;
   onDelete: (messageId: string) => void;
+  onShowProfile: (user: User) => void;
 }
 
 const EMOJI_REACTIONS = ['👍', '❤️', '😂', '🎉', '👎'];
 
-const Comment: React.FC<CommentProps> = ({ message, currentUser, onReply, onToggleReaction, onDelete }) => {
+const Comment: React.FC<CommentProps> = ({ message, currentUser, onReply, onToggleReaction, onDelete, onShowProfile }) => {
   const isAuthor = message.user.id === currentUser.id;
+
+  const handleShowProfile = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onShowProfile(message.user);
+  };
 
   return (
     <div className="flex items-start space-x-3 group">
-      <img src={message.user.avatar} alt="avatar" className="w-10 h-10 rounded-full flex-shrink-0" />
+      <button onClick={handleShowProfile} className="flex-shrink-0" aria-label={`View profile of ${message.user.username}`}>
+        <img src={message.user.avatar} alt="avatar" className="w-10 h-10 rounded-full" />
+      </button>
       <div className="flex-1">
         <div className="flex items-baseline space-x-2">
-          <p className="font-semibold text-sm text-gray-300">{message.user.username}</p>
+          <button onClick={handleShowProfile} className="font-semibold text-sm text-gray-300 hover:underline" aria-label={`View profile of ${message.user.username}`}>{message.user.username}</button>
           <p className="text-xs text-gray-500">{message.timestamp}</p>
         </div>
         {message.replyTo && (
@@ -29,7 +64,7 @@ const Comment: React.FC<CommentProps> = ({ message, currentUser, onReply, onTogg
             <p className="text-gray-500 line-clamp-1 mt-0.5">{message.replyTo.text}</p>
           </div>
         )}
-        <p className="text-white text-sm mt-2 whitespace-pre-wrap">{message.text}</p>
+        <p className="text-white text-sm mt-2 whitespace-pre-wrap"><Linkify text={message.text} /></p>
         <div className="flex items-center flex-wrap gap-x-1 gap-y-2 mt-2 text-xs text-gray-400">
           {EMOJI_REACTIONS.map(emoji => {
             const reactions = message.reactions?.[emoji] || [];

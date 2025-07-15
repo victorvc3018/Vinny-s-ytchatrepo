@@ -35,8 +35,6 @@ const ChatCommentSection: React.FC<ChatCommentSectionProps> = ({ currentUser, me
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [viewingProfile, setViewingProfile] = useState<User | null>(null);
   
-  const commentsEndRef = useRef<HTMLDivElement>(null);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleSendMessage = (e: React.FormEvent) => {
@@ -130,8 +128,8 @@ const ChatCommentSection: React.FC<ChatCommentSectionProps> = ({ currentUser, me
         onCancelReply={() => setReplyingTo(null)}
       />
       
-      <div className="mt-8 space-y-6" ref={scrollContainerRef}>
-        {messages.map((msg) => (
+      <div className="mt-8 space-y-6">
+        {messages.slice().reverse().map((msg) => (
           <Comment 
             key={msg.id} 
             message={msg} 
@@ -148,7 +146,6 @@ const ChatCommentSection: React.FC<ChatCommentSectionProps> = ({ currentUser, me
                 <p>Be the first to say something!</p>
             </div>
         )}
-        <div ref={commentsEndRef} />
       </div>
     </div>
   );

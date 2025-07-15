@@ -11,6 +11,7 @@ export interface Message {
   text: string;
   timestamp: string;
   replyTo?: Message;
+  reactions?: { [emoji: string]: string[] }; // e.g., { '👍': ['user-id-1', 'user-id-2'] }
 }
 
 export interface VideoInfo {

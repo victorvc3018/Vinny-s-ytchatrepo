@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { useState } from 'react';
 import { VideoInfo } from './types';
 
 const ThumbsUpIcon: React.FC = () => (
@@ -22,6 +23,7 @@ const SkeletonText: React.FC<{ className: string }> = ({ className }) => (
 );
 
 const VideoDetails: React.FC<VideoDetailsProps> = ({ videoInfo, isLoading }) => {
+  const [isSubscribed, setIsSubscribed] = useState(false);
 
   return (
     <div className="mt-4 text-white">
@@ -53,7 +55,16 @@ const VideoDetails: React.FC<VideoDetailsProps> = ({ videoInfo, isLoading }) => 
                     </>
                     )}
                 </div>
-                <button className="bg-white text-black font-semibold px-4 py-2 rounded-full text-sm ml-4 hover:bg-gray-200 transition-colors">Subscribe</button>
+                 <button 
+                  onClick={() => setIsSubscribed(!isSubscribed)}
+                  className={`font-semibold px-4 py-2 rounded-full text-sm ml-4 transition-colors ${
+                    isSubscribed 
+                    ? 'bg-[#272727] text-gray-300 hover:bg-gray-600' 
+                    : 'bg-white text-black hover:bg-gray-200'
+                  }`}
+                >
+                  {isSubscribed ? 'Subscribed' : 'Subscribe'}
+                </button>
                 </div>
 
                 <div className="flex items-center space-x-2">

@@ -258,11 +258,11 @@ const App: React.FC = () => {
                   topic={topic}
                 />
               )}
-              {activeMobileTab === 'upNext' && <Sidebar />}
+              {activeMobileTab === 'upNext' && <Sidebar onVideoSelect={setVideoId} />}
             </div>
 
             <div className="hidden lg:block">
-              <Sidebar />
+              <Sidebar onVideoSelect={setVideoId} />
             </div>
           </div>
 

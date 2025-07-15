@@ -10,6 +10,7 @@ export interface Message {
   user: User;
   text: string;
   timestamp: string;
+  replyTo?: Message;
 }
 
 export interface VideoInfo {

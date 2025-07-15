@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User } from '../types';
+import { User } from './types';
 
 interface HeaderProps {
   onUrlSubmit: (url: string) => void;
@@ -42,7 +42,7 @@ const Header: React.FC<HeaderProps> = ({ onUrlSubmit, user, roomId }) => {
     <header className="bg-[#212121] px-4 py-3 flex flex-wrap items-center justify-between gap-y-3 sticky top-0 z-20 border-b border-gray-700">
       <div className="flex items-center space-x-3 flex-shrink-0">
         <YouTubeIcon />
-        <span className="text-white text-xl font-bold tracking-tighter hidden sm:inline">DittoTube</span>
+        <span className="text-white text-xl font-bold tracking-tighter hidden sm:inline">YouTube</span>
       </div>
       <div className="w-full sm:flex-1 order-last sm:order-none px-0 sm:px-8 lg:max-w-3xl">
         <form onSubmit={handleSubmit} className="w-full max-w-xl flex mx-auto sm:mx-0">

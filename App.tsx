@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Header from './Header';
 import VideoPlayer from './VideoPlayer';
@@ -41,6 +42,7 @@ const App: React.FC = () => {
   const [isLoadingInfo, setIsLoadingInfo] = useState(true);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [roomId, setRoomId] = useState<string | null>(null);
+  const [activeMobileTab, setActiveMobileTab] = useState<'chat' | 'upNext'>('chat');
 
 
   useEffect(() => {
@@ -124,17 +126,54 @@ const App: React.FC = () => {
       <Header onUrlSubmit={handleUrlSubmit} user={currentUser} roomId={roomId} />
       <main className="flex-grow p-4 lg:p-6">
         <div className="max-w-screen-2xl mx-auto grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          
+          {/* --- Main Content Column (Video + Desktop Chat) --- */}
           <div className="lg:col-span-2 xl:col-span-3">
             <VideoPlayer videoId={videoId} />
             <VideoDetails videoInfo={videoInfo} isLoading={isLoadingInfo} />
-            <div className="mt-6">
+            
+            {/* Desktop-only Chat */}
+            <div className="mt-6 hidden lg:block">
               <ChatCommentSection currentUser={currentUser} roomId={roomId} />
             </div>
           </div>
-          {/* Sidebar: Stacks below main content on mobile, moves to the side on larger screens */}
-          <div className="lg:col-span-1 xl:col-span-1 mt-8 lg:mt-0 border-t-2 border-gray-800 pt-6 lg:border-t-0 lg:pt-0">
-            <Sidebar />
+          
+          {/* --- Sidebar Column (Desktop) OR Tabbed Content (Mobile) --- */}
+          <div className="lg:col-span-1 xl:col-span-1">
+            {/* Mobile Tabbed View */}
+            <div className="lg:hidden mt-4">
+              <div className="flex border-b border-gray-700 mb-4">
+                <button
+                  onClick={() => setActiveMobileTab('chat')}
+                  className={`flex-1 text-center py-2 text-sm font-semibold transition-colors ${
+                    activeMobileTab === 'chat' ? 'text-white border-b-2 border-white' : 'text-gray-400'
+                  }`}
+                  aria-pressed={activeMobileTab === 'chat'}
+                >
+                  Live Chat
+                </button>
+                <button
+                  onClick={() => setActiveMobileTab('upNext')}
+                  className={`flex-1 text-center py-2 text-sm font-semibold transition-colors ${
+                    activeMobileTab === 'upNext' ? 'text-white border-b-2 border-white' : 'text-gray-400'
+                  }`}
+                  aria-pressed={activeMobileTab === 'upNext'}
+                >
+                  Up Next
+                </button>
+              </div>
+              {activeMobileTab === 'chat' && (
+                <ChatCommentSection currentUser={currentUser} roomId={roomId} />
+              )}
+              {activeMobileTab === 'upNext' && <Sidebar />}
+            </div>
+
+            {/* Desktop Sidebar */}
+            <div className="hidden lg:block">
+              <Sidebar />
+            </div>
           </div>
+
         </div>
       </main>
     </div>

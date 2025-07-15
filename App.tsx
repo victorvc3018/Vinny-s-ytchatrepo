@@ -47,11 +47,17 @@ const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [roomId, setRoomId] = useState<string | null>(null);
   const [activeMobileTab, setActiveMobileTab] = useState<'chat' | 'upNext'>('chat');
+  const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
   
   // MQTT related state lifted up to App
   const [messages, setMessages] = useState<Message[]>([]);
   const [connectionStatus, setConnectionStatus] = useState('Disconnected');
   const clientRef = useRef<mqtt.MqttClient | null>(null);
+  const activeMobileTabRef = useRef(activeMobileTab);
+  
+  useEffect(() => {
+    activeMobileTabRef.current = activeMobileTab;
+  }, [activeMobileTab]);
 
   useEffect(() => {
     try {
@@ -88,7 +94,14 @@ const App: React.FC = () => {
           const payloadString = payload.toString();
           if (payloadString) {
             const history: Message[] = JSON.parse(payloadString);
-            setMessages(Array.isArray(history) ? history : []);
+            const currentMessages = Array.isArray(history) ? history : [];
+            
+            setMessages(prevMessages => {
+              if (currentMessages.length > prevMessages.length && activeMobileTabRef.current !== 'chat') {
+                setHasUnreadMessages(true);
+              }
+              return currentMessages;
+            });
           } else {
             setMessages([]);
           }
@@ -231,13 +244,19 @@ const App: React.FC = () => {
             <div className="lg:hidden mt-4">
               <div className="flex border-b border-gray-700 mb-4">
                 <button
-                  onClick={() => setActiveMobileTab('chat')}
-                  className={`flex-1 text-center py-2 text-sm font-semibold transition-colors ${
+                  onClick={() => {
+                    setActiveMobileTab('chat');
+                    setHasUnreadMessages(false);
+                  }}
+                  className={`relative flex-1 text-center py-2 text-sm font-semibold transition-colors ${
                     activeMobileTab === 'chat' ? 'text-white border-b-2 border-white' : 'text-gray-400'
                   }`}
                   aria-pressed={activeMobileTab === 'chat'}
                 >
                   Live Chat
+                  {hasUnreadMessages && (
+                    <span className="absolute top-2 right-6 w-2.5 h-2.5 bg-red-500 rounded-full"></span>
+                  )}
                 </button>
                 <button
                   onClick={() => setActiveMobileTab('upNext')}

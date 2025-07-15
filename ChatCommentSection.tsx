@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import mqtt from 'mqtt';
-import { Message, User } from '../types';
+import { Message, User } from './types';
 import Comment from './Comment';
 import CommentInput from './CommentInput';
 
@@ -17,12 +17,14 @@ const ChatCommentSection: React.FC<ChatCommentSectionProps> = ({ currentUser, ro
   const [messages, setMessages] = useState<Message[]>([]);
   const [userInput, setUserInput] = useState('');
   const [connectionStatus, setConnectionStatus] = useState('Connecting...');
+  const [replyingTo, setReplyingTo] = useState<Message | null>(null);
+  
   const commentsEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const clientRef = useRef<mqtt.MqttClient | null>(null);
   const topic = `${MQTT_TOPIC_PREFIX}/${roomId}`;
 
   useEffect(() => {
-    // A flag to prevent state updates after the component has unmounted.
     let isMounted = true;
     const client = mqtt.connect(MQTT_BROKER_URL);
     clientRef.current = client;
@@ -30,7 +32,6 @@ const ChatCommentSection: React.FC<ChatCommentSectionProps> = ({ currentUser, ro
     client.on('connect', () => {
       if (!isMounted) return;
       setConnectionStatus(`Connected to Room: ${roomId}`);
-      // Subscribe to the topic. New subscribers will receive the last retained message.
       client.subscribe(topic, { qos: 1 }, (err) => {
         if (err && isMounted) {
           console.error('Subscription error:', err);
@@ -44,13 +45,11 @@ const ChatCommentSection: React.FC<ChatCommentSectionProps> = ({ currentUser, ro
         try {
           const payloadString = payload.toString();
           if (payloadString) {
-            // The payload is the full history, an array of Message objects.
             const history: Message[] = JSON.parse(payloadString);
             if (Array.isArray(history)) {
               setMessages(history);
             }
           } else {
-            // If the retained message is empty, it means it's a new room.
             setMessages([]);
           }
         } catch (e) {
@@ -77,7 +76,14 @@ const ChatCommentSection: React.FC<ChatCommentSectionProps> = ({ currentUser, ro
   }, [roomId, topic]);
 
   useEffect(() => {
-    commentsEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const node = scrollContainerRef.current;
+    if (node) {
+      // Only scroll if user is near the bottom (within 150px)
+      const isScrolledToBottom = node.scrollHeight - node.scrollTop <= node.clientHeight + 150;
+      if (isScrolledToBottom) {
+        commentsEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      }
+    }
   }, [messages]);
 
   const handleSendMessage = (e: React.FormEvent) => {
@@ -89,22 +95,22 @@ const ChatCommentSection: React.FC<ChatCommentSectionProps> = ({ currentUser, ro
       user: currentUser,
       text: userInput.trim(),
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      ...(replyingTo && { replyTo: replyingTo }),
     };
     
-    // Append the new message to the current history.
     const updatedHistory = [...messages, newMessage];
 
-    // Publish the entire updated history to the topic with the 'retain' flag.
-    // This makes the broker store this message and deliver it to any new subscribers.
-    // QoS 1 ensures the message is delivered at least once.
-    // NOTE: This implementation has a potential race condition if two users
-    // send a message simultaneously. The last message to arrive at the broker
-    // will overwrite the other. For a low-traffic chat, this is an acceptable risk.
     clientRef.current.publish(topic, JSON.stringify(updatedHistory), { qos: 1, retain: true });
 
-    // The UI will update when the message is received back from the broker,
-    // ensuring all clients stay in sync with the single source of truth.
     setUserInput('');
+    setReplyingTo(null);
+  };
+
+  const handleSetReplyingTo = (message: Message) => {
+    setReplyingTo(message);
+    // Optional: focus the input field
+    const input = document.querySelector('input[aria-label="Add a reply"]') as HTMLInputElement;
+    input?.focus();
   };
 
   return (
@@ -121,11 +127,13 @@ const ChatCommentSection: React.FC<ChatCommentSectionProps> = ({ currentUser, ro
         value={userInput}
         onChange={(e) => setUserInput(e.target.value)}
         onSubmit={handleSendMessage}
+        replyingTo={replyingTo}
+        onCancelReply={() => setReplyingTo(null)}
       />
       
-      <div className="mt-8 space-y-6">
+      <div className="mt-8 space-y-6" ref={scrollContainerRef}>
         {messages.map((msg) => (
-          <Comment key={msg.id} message={msg} />
+          <Comment key={msg.id} message={msg} onReply={handleSetReplyingTo} />
         ))}
         {messages.length === 0 && (
             <div className="text-center text-gray-500 pt-8">

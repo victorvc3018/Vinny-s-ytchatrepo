@@ -75,16 +75,12 @@ const ChatCommentSection: React.FC<ChatCommentSectionProps> = ({ currentUser, ro
     };
   }, [roomId, topic]);
 
-  useEffect(() => {
-    const node = scrollContainerRef.current;
-    if (node) {
-      // Only scroll if user is near the bottom (within 150px)
-      const isScrolledToBottom = node.scrollHeight - node.scrollTop <= node.clientHeight + 150;
-      if (isScrolledToBottom) {
-        commentsEndRef.current?.scrollIntoView({ behavior: "smooth" });
-      }
+  const publishMessages = (updatedMessages: Message[]) => {
+    if (clientRef.current && clientRef.current.connected) {
+      const payload = JSON.stringify(updatedMessages);
+      clientRef.current.publish(topic, payload, { qos: 1, retain: true });
     }
-  }, [messages]);
+  };
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,17 +95,48 @@ const ChatCommentSection: React.FC<ChatCommentSectionProps> = ({ currentUser, ro
     };
     
     const updatedHistory = [...messages, newMessage];
-
-    clientRef.current.publish(topic, JSON.stringify(updatedHistory), { qos: 1, retain: true });
+    publishMessages(updatedHistory);
 
     setUserInput('');
     setReplyingTo(null);
   };
 
+  const handleToggleReaction = (messageId: string, emoji: string) => {
+    const updatedMessages = messages.map(msg => {
+      if (msg.id === messageId) {
+        const reactions = { ...(msg.reactions || {}) };
+        const reactedUsers = reactions[emoji] || [];
+        const userIndex = reactedUsers.indexOf(currentUser.id);
+
+        if (userIndex > -1) {
+          reactedUsers.splice(userIndex, 1);
+        } else {
+          reactedUsers.push(currentUser.id);
+        }
+        
+        if (reactedUsers.length === 0) {
+          delete reactions[emoji];
+        } else {
+          reactions[emoji] = reactedUsers;
+        }
+
+        return { ...msg, reactions };
+      }
+      return msg;
+    });
+    setMessages(updatedMessages); // Optimistic UI update
+    publishMessages(updatedMessages);
+  };
+  
+  const handleDeleteMessage = (messageId: string) => {
+    const updatedMessages = messages.filter(msg => msg.id !== messageId);
+    publishMessages(updatedMessages);
+  };
+
+
   const handleSetReplyingTo = (message: Message) => {
     setReplyingTo(message);
-    // Optional: focus the input field
-    const input = document.querySelector('input[aria-label="Add a reply"]') as HTMLInputElement;
+    const input = document.querySelector('input[aria-label="Add a reply"], input[aria-label="Add a comment"]') as HTMLInputElement;
     input?.focus();
   };
 
@@ -133,7 +160,14 @@ const ChatCommentSection: React.FC<ChatCommentSectionProps> = ({ currentUser, ro
       
       <div className="mt-8 space-y-6" ref={scrollContainerRef}>
         {messages.map((msg) => (
-          <Comment key={msg.id} message={msg} onReply={handleSetReplyingTo} />
+          <Comment 
+            key={msg.id} 
+            message={msg} 
+            onReply={handleSetReplyingTo}
+            currentUser={currentUser}
+            onToggleReaction={handleToggleReaction}
+            onDelete={handleDeleteMessage}
+          />
         ))}
         {messages.length === 0 && (
             <div className="text-center text-gray-500 pt-8">

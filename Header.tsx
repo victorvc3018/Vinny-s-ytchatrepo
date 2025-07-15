@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { User } from './types';
 
@@ -16,24 +17,34 @@ const CopyIcon: React.FC<{className?: string}> = ({className}) => (
 const ArrowLeftIcon: React.FC<{ className?: string }> = ({ className }) => (
   <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
 );
+const TrashIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+);
+
 
 interface HeaderProps {
   onUrlSubmit: (url: string) => void;
   user: User;
   roomId: string;
+  onDeleteRoom: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onUrlSubmit, user, roomId }) => {
+const DELETE_PASSCODE = '3021';
+
+const Header: React.FC<HeaderProps> = ({ onUrlSubmit, user, roomId, onDeleteRoom }) => {
   const [url, setUrl] = useState('');
   const [copied, setCopied] = useState(false);
   const [isMobileSearchVisible, setIsMobileSearchVisible] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [passcode, setPasscode] = useState('');
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (url.trim()) {
       onUrlSubmit(url);
       setUrl('');
-      setIsMobileSearchVisible(false); // Hide search on mobile after submit
+      setIsMobileSearchVisible(false);
     }
   };
 
@@ -43,72 +54,127 @@ const Header: React.FC<HeaderProps> = ({ onUrlSubmit, user, roomId }) => {
       setTimeout(() => setCopied(false), 2000);
     });
   };
+  
+  const handleDeleteConfirm = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passcode === DELETE_PASSCODE) {
+      onDeleteRoom();
+      setIsDeleteModalOpen(false);
+      setPasscode('');
+    } else {
+      alert('Incorrect passcode.');
+    }
+  };
 
   return (
-    <header className="bg-[#212121] px-4 py-3 sticky top-0 z-20 border-b border-gray-700 h-[60px] flex items-center">
-      <div className="flex items-center justify-between gap-4 w-full relative">
-        
-        {/* Mobile Search View - Slides in from left */}
-        <div className={`absolute top-1/2 -translate-y-1/2 left-0 w-full h-full bg-[#212121] flex items-center px-2 gap-2 transition-transform duration-300 ease-in-out ${isMobileSearchVisible ? 'translate-x-0' : '-translate-x-full'} sm:hidden`}>
-          <button onClick={() => setIsMobileSearchVisible(false)} aria-label="Back" className="p-2">
-            <ArrowLeftIcon className="w-6 h-6 text-gray-300" />
-          </button>
-          <form onSubmit={handleSubmit} className="w-full flex">
-            <input
-              type="text"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="Paste YouTube video link..."
-              className="w-full bg-[#121212] border border-gray-700 text-gray-200 rounded-l-full px-4 py-2 focus:outline-none focus:border-blue-500 transition-colors text-sm"
-              aria-label="Paste YouTube video link"
-              autoFocus
-            />
-            <button type="submit" className="bg-[#383838] border border-gray-700 border-l-0 px-5 py-2 rounded-r-full hover:bg-gray-600 transition-colors" aria-label="Search">
-              <SearchIcon className="w-5 h-5 text-gray-300" />
+    <>
+      <header className="bg-[#212121] px-4 py-3 sticky top-0 z-20 border-b border-gray-700 h-[60px] flex items-center">
+        <div className="flex items-center justify-between gap-4 w-full relative">
+          
+          <div className={`absolute top-1/2 -translate-y-1/2 left-0 w-full h-full bg-[#212121] flex items-center px-2 gap-2 transition-transform duration-300 ease-in-out ${isMobileSearchVisible ? 'translate-x-0' : '-translate-x-full'} sm:hidden`}>
+            <button onClick={() => setIsMobileSearchVisible(false)} aria-label="Back" className="p-2">
+              <ArrowLeftIcon className="w-6 h-6 text-gray-300" />
             </button>
-          </form>
-        </div>
-
-        {/* Default View */}
-        <div className={`flex items-center justify-between w-full transition-opacity duration-200 ${isMobileSearchVisible ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
-          <div className="flex items-center space-x-3 flex-shrink-0">
-            <YouTubeIcon />
-            <span className="text-white text-xl font-bold tracking-tighter">YouTube</span>
-          </div>
-
-          <div className="hidden sm:flex flex-1 px-8 lg:max-w-3xl">
-            <form onSubmit={handleSubmit} className="w-full max-w-xl flex mx-auto">
+            <form onSubmit={handleSubmit} className="w-full flex">
               <input
                 type="text"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="Paste YouTube video link..."
-                className="w-full bg-[#121212] border border-gray-700 text-gray-200 rounded-l-full px-4 py-2.5 focus:outline-none focus:border-blue-500 transition-colors text-sm sm:text-base"
+                className="w-full bg-[#121212] border border-gray-700 text-gray-200 rounded-l-full px-4 py-2 focus:outline-none focus:border-blue-500 transition-colors text-sm"
                 aria-label="Paste YouTube video link"
+                autoFocus
               />
-              <button type="submit" className="bg-[#383838] border border-gray-700 border-l-0 px-5 py-2.5 rounded-r-full hover:bg-gray-600 transition-colors" aria-label="Search">
+              <button type="submit" className="bg-[#383838] border border-gray-700 border-l-0 px-5 py-2 rounded-r-full hover:bg-gray-600 transition-colors" aria-label="Search">
                 <SearchIcon className="w-5 h-5 text-gray-300" />
               </button>
             </form>
           </div>
 
-          <div className="flex items-center space-x-2 sm:space-x-4">
-            <button onClick={() => setIsMobileSearchVisible(true)} className="p-2 sm:hidden" aria-label="Open search">
-              <SearchIcon className="w-6 h-6 text-gray-300" />
-            </button>
-            <div className="hidden md:flex items-center space-x-2 bg-[#272727] pl-3 pr-2 py-1.5 rounded-full">
-                <span className="text-xs text-gray-400">ROOM ID:</span>
-                <span className="text-sm font-mono text-white">{roomId}</span>
-                <button onClick={handleCopy} className="p-1.5 rounded-full hover:bg-gray-600 transition-colors" aria-label="Copy Room ID">
-                  {copied ? <span className="text-xs text-sky-400">Copied!</span> : <CopyIcon className="w-5 h-5 text-gray-300" />}
-                </button>
+          <div className={`flex items-center justify-between w-full transition-opacity duration-200 ${isMobileSearchVisible ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+            <div className="flex items-center space-x-3 flex-shrink-0">
+              <YouTubeIcon />
+              <span className="text-white text-xl font-bold tracking-tighter">YouTube</span>
             </div>
-            <img src={user.avatar} alt="user avatar" className="w-9 h-9 rounded-full" />
+
+            <div className="hidden sm:flex flex-1 px-8 lg:max-w-3xl">
+              <form onSubmit={handleSubmit} className="w-full max-w-xl flex mx-auto">
+                <input
+                  type="text"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  placeholder="Paste YouTube video link..."
+                  className="w-full bg-[#121212] border border-gray-700 text-gray-200 rounded-l-full px-4 py-2.5 focus:outline-none focus:border-blue-500 transition-colors text-sm sm:text-base"
+                  aria-label="Paste YouTube video link"
+                />
+                <button type="submit" className="bg-[#383838] border border-gray-700 border-l-0 px-5 py-2.5 rounded-r-full hover:bg-gray-600 transition-colors" aria-label="Search">
+                  <SearchIcon className="w-5 h-5 text-gray-300" />
+                </button>
+              </form>
+            </div>
+
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <button onClick={() => setIsMobileSearchVisible(true)} className="p-2 sm:hidden" aria-label="Open search">
+                <SearchIcon className="w-6 h-6 text-gray-300" />
+              </button>
+              <div className="hidden md:flex items-center space-x-2 bg-[#272727] pl-3 pr-2 py-1.5 rounded-full">
+                  <span className="text-xs text-gray-400">ROOM ID:</span>
+                  <span className="text-sm font-mono text-white">{roomId}</span>
+                  <button onClick={handleCopy} className="p-1.5 rounded-full hover:bg-gray-600 transition-colors" aria-label="Copy Room ID">
+                    {copied ? <span className="text-xs text-sky-400">Copied!</span> : <CopyIcon className="w-5 h-5 text-gray-300" />}
+                  </button>
+                  <button onClick={() => setIsDeleteModalOpen(true)} className="p-1.5 rounded-full hover:bg-red-900/50 transition-colors" aria-label="Delete Room">
+                    <TrashIcon className="w-5 h-5 text-red-500" />
+                  </button>
+              </div>
+              <img src={user.avatar} alt="user avatar" className="w-9 h-9 rounded-full" />
+               <button onClick={() => setIsDeleteModalOpen(true)} className="p-2 md:hidden" aria-label="Delete Room">
+                    <TrashIcon className="w-6 h-6 text-red-500" />
+              </button>
+            </div>
           </div>
         </div>
+      </header>
 
-      </div>
-    </header>
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-[#282828] rounded-2xl shadow-2xl p-6 ring-1 ring-white/10">
+            <h2 className="text-xl font-bold text-white">Delete Room</h2>
+            <p className="text-gray-300 mt-2">This will permanently delete the entire chat history for room <strong className="font-mono text-white">{roomId}</strong>. This action cannot be undone.</p>
+            <p className="text-gray-400 text-sm mt-1">All participants will be disconnected.</p>
+            
+            <form onSubmit={handleDeleteConfirm} className="mt-6">
+              <label htmlFor="passcode" className="text-sm font-medium text-gray-300">Enter passcode to confirm</label>
+              <input
+                id="passcode"
+                type="password"
+                value={passcode}
+                onChange={(e) => setPasscode(e.target.value)}
+                className="w-full mt-1 px-4 py-3 bg-[#121212] border border-gray-600 rounded-md placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500 text-center font-mono tracking-wider"
+                placeholder="****"
+                autoFocus
+              />
+              <div className="mt-6 flex justify-end gap-4">
+                <button
+                  type="button"
+                  onClick={() => setIsDeleteModalOpen(false)}
+                  className="px-5 py-2.5 text-sm font-semibold text-white bg-transparent rounded-full hover:bg-gray-700 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={passcode !== DELETE_PASSCODE}
+                  className="px-5 py-2.5 text-sm font-semibold text-white bg-red-600 rounded-full hover:bg-red-700 disabled:bg-gray-600 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
+                >
+                  Confirm Delete
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 

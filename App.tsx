@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import Header from './components/Header';
-import VideoPlayer from './components/VideoPlayer';
-import VideoDetails from './components/VideoDetails';
-import ChatCommentSection from './components/ChatCommentSection';
-import UserSetup from './components/UserSetup';
-import RoomManager from './components/RoomManager';
-import Sidebar from './components/Sidebar';
+import Header from './Header';
+import VideoPlayer from './VideoPlayer';
+import VideoDetails from './VideoDetails';
+import ChatCommentSection from './ChatCommentSection';
+import UserSetup from './UserSetup';
+import RoomManager from './RoomManager';
+import Sidebar from './Sidebar';
 import { VideoInfo, User } from './types';
 
 // Utility function to extract YouTube video ID from URL

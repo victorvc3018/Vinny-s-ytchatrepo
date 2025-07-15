@@ -12,11 +12,32 @@ interface ChatCommentSectionProps {
   onPublish: (updatedMessages: Message[], topic: string) => void;
 }
 
+const UserProfileModal: React.FC<{ user: User; onClose: () => void; onMention: (user: User) => void; }> = ({ user, onClose, onMention }) => {
+  return (
+    <div className="fixed inset-0 bg-black/60 z-30 flex items-center justify-center" onClick={onClose}>
+      <div className="bg-[#282828] rounded-2xl shadow-2xl p-6 ring-1 ring-white/10 w-80 text-center" onClick={e => e.stopPropagation()}>
+        <img src={user.avatar} alt={user.username} className="w-24 h-24 rounded-full mx-auto ring-4 ring-gray-600" />
+        <h3 className="mt-4 text-xl font-bold">{user.username}</h3>
+        <p className="text-sm text-gray-400">{user.id}</p>
+        <button
+          onClick={() => onMention(user)}
+          className="mt-6 w-full px-4 py-3 text-base font-semibold text-black bg-[#3ea6ff] rounded-full hover:bg-sky-400 transition-colors"
+        >
+          Mention @{user.username}
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const ChatCommentSection: React.FC<ChatCommentSectionProps> = ({ currentUser, messages, connectionStatus, topic, onPublish }) => {
   const [userInput, setUserInput] = useState('');
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
+  const [viewingProfile, setViewingProfile] = useState<User | null>(null);
+  
   const commentsEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,12 +91,28 @@ const ChatCommentSection: React.FC<ChatCommentSectionProps> = ({ currentUser, me
 
   const handleSetReplyingTo = (message: Message) => {
     setReplyingTo(message);
-    const input = document.querySelector('input[aria-label="Add a reply"], input[aria-label="Add a comment"]') as HTMLInputElement;
-    input?.focus();
+    inputRef.current?.focus();
+  };
+
+  const handleShowProfile = (user: User) => {
+    setViewingProfile(user);
+  };
+
+  const handleMentionUser = (user: User) => {
+    setUserInput(prev => `${prev} @${user.username} `.trimStart());
+    setViewingProfile(null);
+    inputRef.current?.focus();
   };
 
   return (
     <div>
+       {viewingProfile && (
+        <UserProfileModal 
+          user={viewingProfile} 
+          onClose={() => setViewingProfile(null)}
+          onMention={handleMentionUser}
+        />
+      )}
       <div className="flex justify-between items-baseline">
         <h2 className="text-lg font-bold mb-4">{messages.length} Comments</h2>
         <p className="text-xs text-gray-500" title={connectionStatus}>
@@ -84,6 +121,7 @@ const ChatCommentSection: React.FC<ChatCommentSectionProps> = ({ currentUser, me
       </div>
 
       <CommentInput
+        ref={inputRef}
         currentUser={currentUser}
         value={userInput}
         onChange={(e) => setUserInput(e.target.value)}
@@ -101,6 +139,7 @@ const ChatCommentSection: React.FC<ChatCommentSectionProps> = ({ currentUser, me
             currentUser={currentUser}
             onToggleReaction={handleToggleReaction}
             onDelete={handleDeleteMessage}
+            onShowProfile={handleShowProfile}
           />
         ))}
         {messages.length === 0 && (
